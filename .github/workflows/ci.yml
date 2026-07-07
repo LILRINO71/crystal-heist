@@ -1,0 +1,45 @@
+﻿name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build place file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rojo
+        run: |
+          curl -fsSL -o rojo.zip https://github.com/rojo-rbx/rojo/releases/download/v7.7.0/rojo-7.7.0-linux-x86_64.zip
+          unzip -o rojo.zip
+          chmod +x rojo
+
+      - name: Install Luau
+        run: |
+          curl -fsSL -o luau.zip https://github.com/luau-lang/luau/releases/download/0.728/luau-ubuntu.zip
+          unzip -o luau.zip
+          chmod +x luau-compile
+
+      - name: Syntax-check all Luau sources
+        run: |
+          fail=0
+          for f in $(find src -name '*.luau'); do
+            if ! ./luau-compile --binary "$f" > /dev/null; then
+              echo "FAIL: $f"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Build
+        run: ./rojo build default.project.json -o CrystalHeist.rbxl
+
+      - name: Upload place file
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrystalHeist
+          path: CrystalHeist.rbxl
