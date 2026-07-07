@@ -17,7 +17,7 @@ local STEPS = {
 	{ emoji = "⚡", title = "CHARGE", text = "Click your growing crystals to speed them up. More clicks = faster money." },
 	{ emoji = "✨", title = "HARVEST", text = "Sparkling crystals are READY — click them (or HARVEST ALL) for coins. Rare mutations pay up to 300x!" },
 	{ emoji = "🏴", title = "STEAL", text = "See a sparkling crystal on someone ELSE'S plot? Click it and SPRINT to the Black Market to bank half its value. You'll be slowed and marked red!" },
-	{ emoji = "🛡️", title = "DEFEND", text = "Harvest fast! Click thieves to zap your crystal back, or buy a Guard Turret in the Shop to zap them automatically." },
+	{ emoji = "🛡️", title = "DEFEND", text = "Harvest fast! Click thieves to zap your crystal back, or buy a Guard Turret / coin Shield in the Shop's Defense tab." },
 	{ emoji = "🌌", title = "VOID SURGE", text = "When the sky turns purple: 3x mutation luck and juiced heist payouts. GO CRAZY." },
 }
 

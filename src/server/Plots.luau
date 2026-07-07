@@ -46,6 +46,7 @@ local stealHandler = nil -- set by Heist via Plots.setStealHandler
 -- runtime = { model, ready = bool, lastCharge = number }
 local plots = {}
 local plotOfPlayer = {} -- [Player] = plot index
+local lastTeleport = {} -- [Player] = os.clock() of last home teleport
 
 -- ============================== HELPERS ==============================
 
@@ -162,6 +163,7 @@ local function decorateReadyCrystal(runtime, saved)
 	gui.Size = UDim2.fromScale(10, 2.6)
 	gui.StudsOffsetWorldSpace = Vector3.new(0, 9, 0)
 	gui.MaxDistance = 200
+	gui.AlwaysOnTop = true -- never clips into the crystal
 	local value = Formulas.harvestValue(shard.value, mutation and mutation.multiplier or 1, false)
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
@@ -289,6 +291,9 @@ local function harvest(player: Player, plotIndex: number, slot: number): number?
 		Monetization.ownsPass(player, "DoubleCoins")
 	)
 
+	if mutation then
+		profile.mutationCounts[saved.mutation] = (profile.mutationCounts[saved.mutation] or 0) + 1
+	end
 	Data.recordHarvest(player, value)
 	removeCrystalModel(plotIndex, slot)
 	profile.crystals[tostring(slot)] = nil
@@ -403,6 +408,11 @@ local function onPlant(player: Player, slot: any, shardKey: any)
 	end
 
 	local luck = (Monetization.ownsPass(player, "Lucky") and 2 or 1) * Events.luckMultiplier()
+	if profile.luckPlants > 0 then
+		luck *= profile.luckMult
+		profile.luckPlants -= 1
+		Data.sync(player)
+	end
 	local saved = {
 		shard = shardKey,
 		plantedAt = os.time(),
@@ -429,6 +439,7 @@ function Plots.addShield(player: Player, seconds: number)
 		return
 	end
 	profile.shieldUntil = math.max(profile.shieldUntil, os.time()) + seconds
+	Data.sync(player)
 	if plotIndex then
 		plots[plotIndex].shieldDome.Transparency = 0.75
 	end
@@ -632,6 +643,7 @@ local function assignPlot(player: Player, profile)
 
 	-- Fresh-spawn protection so nobody gets robbed while loading in.
 	profile.shieldUntil = math.max(profile.shieldUntil, os.time() + Config.Heist.JoinShield)
+	Data.sync(player)
 
 	if profile.turretTier > 0 then
 		buildTurret(plotIndex, profile.turretTier)
@@ -675,6 +687,7 @@ local function releasePlot(player: Player)
 	end
 	plot.shieldDome.Transparency = 1
 	plotOfPlayer[player] = nil
+	lastTeleport[player] = nil
 	refreshPedestals(plotIndex)
 end
 
@@ -733,6 +746,7 @@ local function buildPlot(index: number, parent: Folder)
 	nameGui.Size = UDim2.fromScale(14, 3)
 	nameGui.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
 	nameGui.MaxDistance = 250
+	nameGui.AlwaysOnTop = true
 	local nameplate = Instance.new("TextLabel")
 	nameplate.Size = UDim2.fromScale(1, 1)
 	nameplate.BackgroundTransparency = 1
@@ -783,8 +797,9 @@ local function buildPlot(index: number, parent: Folder)
 
 		local gui = Instance.new("BillboardGui")
 		gui.Size = UDim2.fromScale(6, 1.8)
-		gui.StudsOffsetWorldSpace = Vector3.new(0, 3.2, 0)
+		gui.StudsOffsetWorldSpace = Vector3.new(0, 4.4, 0)
 		gui.MaxDistance = 120
+		gui.AlwaysOnTop = true -- never clips into the pedestal
 		gui.Enabled = false
 		local label = Instance.new("TextLabel")
 		label.Size = UDim2.fromScale(1, 1)
@@ -863,6 +878,71 @@ function Plots.start(dataService, monetizationService, eventsService)
 		Data.setTutorialSeen(player)
 	end)
 
+	-- Coin-purchased plot shield: protect your crystals with money.
+	remotes().BuyShield.OnServerEvent:Connect(function(player)
+		local profile = Data.get(player)
+		if not profile then
+			return
+		end
+		if profile.shieldUntil - os.time() >= Config.Shield.MaxRemaining then
+			notify(player, "error", "Your shield is already stacked to the max!")
+			return
+		end
+		if not Data.trySpendCoins(player, Config.Shield.CoinCost) then
+			notify(player, "error", `A shield costs {Formulas.abbreviate(Config.Shield.CoinCost)} coins!`)
+			return
+		end
+		Plots.addShield(player, Config.Shield.Duration)
+		notify(player, "success", `🛡️ Plot shielded for {Config.Shield.Duration / 60} more minutes!`)
+	end)
+
+	-- Coin-purchased luck potion: better mutation odds on your next plants.
+	remotes().BuyPotion.OnServerEvent:Connect(function(player)
+		local profile = Data.get(player)
+		if not profile then
+			return
+		end
+		local potion = Config.Potions.Luck
+		if profile.luckPlants > 0 and profile.luckMult > potion.multiplier then
+			notify(player, "error", "A stronger potion is still active!")
+			return
+		end
+		if profile.luckPlants >= potion.maxPlants then
+			notify(player, "error", `Potions are stacked to the max ({potion.maxPlants} plants)!`)
+			return
+		end
+		if not Data.trySpendCoins(player, potion.cost) then
+			notify(player, "error", `The Luck Potion costs {Formulas.abbreviate(potion.cost)} coins!`)
+			return
+		end
+		if profile.luckMult ~= potion.multiplier then
+			profile.luckPlants = 0 -- switching strength resets the stack
+		end
+		profile.luckMult = potion.multiplier
+		profile.luckPlants = math.min(profile.luckPlants + potion.plants, potion.maxPlants)
+		Data.sync(player)
+		notify(player, "success", `🧪 {potion.multiplier}x mutation luck for your next {profile.luckPlants} plants!`)
+	end)
+
+	-- Teleport back to your plot (blocked while carrying stolen loot!).
+	remotes().TeleportHome.OnServerEvent:Connect(function(player)
+		local plotIndex = plotOfPlayer[player]
+		local character = player.Character
+		if not plotIndex or not character or not character:FindFirstChild("HumanoidRootPart") then
+			return
+		end
+		if player:GetAttribute("CarryingFromUserId") ~= nil then
+			notify(player, "error", "No teleporting with stolen goods! 🏃")
+			return
+		end
+		local now = os.clock()
+		if now - (lastTeleport[player] or 0) < 5 then
+			return
+		end
+		lastTeleport[player] = now
+		character:PivotTo(plots[plotIndex].cframe * CFrame.new(0, 4, -20))
+	end)
+
 	-- Growth heartbeat: advance visuals, flip finished crystals to Ready,
 	-- and keep shield domes in sync with their timers.
 	task.spawn(function()
@@ -917,6 +997,21 @@ function Plots.start(dataService, monetizationService, eventsService)
 	-- Plot Shield dev product.
 	Monetization.setProductHandler("shield", function(player, product)
 		Plots.addShield(player, product.amount)
+	end)
+
+	-- Super Luck Potion dev product.
+	Monetization.setProductHandler("superLuck", function(player)
+		local profile = Data.get(player)
+		if not profile then
+			return
+		end
+		local potion = Config.Potions.SuperLuck
+		if profile.luckMult ~= potion.multiplier then
+			profile.luckPlants = 0 -- switching strength resets the stack
+		end
+		profile.luckMult = potion.multiplier
+		profile.luckPlants += potion.plants
+		Data.sync(player)
 	end)
 end
 

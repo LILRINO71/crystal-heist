@@ -85,6 +85,21 @@ Config.Charge = {
 	AutoChargeInterval = 8, -- Auto Charge gamepass tick (applies BoostPerClick to every crystal)
 }
 
+-- ============================== PROTECTION & POTIONS ==============================
+-- Coin-purchasable defense and luck: money protects your crystals, money
+-- juices your mutation odds.
+
+Config.Shield = {
+	CoinCost = 2_500,
+	Duration = 300, -- 5 minutes per purchase
+	MaxRemaining = 600, -- can't stack a coin shield beyond 10 minutes
+}
+
+Config.Potions = {
+	Luck = { cost = 5_000, multiplier = 3, plants = 10, maxPlants = 30 }, -- coins
+	SuperLuck = { multiplier = 10, plants = 10 }, -- Robux dev product
+}
+
 -- ============================== HEISTS ==============================
 -- Only READY crystals can be stolen. The thief carries the crystal over
 -- their head (slowed + marked red for everyone) and must reach the Black
@@ -95,6 +110,8 @@ Config.Heist = {
 	PayoutFraction = 0.5, -- thief banks this share of the crystal's value
 	MasterThiefBonus = 0.25, -- Master Thief gamepass adds this to the fraction
 	BaseWalkSpeed = 16,
+	SpeedyBootsWalkSpeed = 22, -- with the Speedy Boots gamepass
+	CarrySpeedBootsBonus = 3, -- Speedy Boots bonus while carrying
 	CarryWalkSpeed = 11, -- slowed while carrying
 	CarryWalkSpeedMasterThief = 13,
 	CarryTimeout = 60, -- seconds before a carried crystal returns on its own
@@ -134,6 +151,7 @@ Config.GamePasses = {
 	AutoCharge = 0, -- suggested price: 349 R$
 	Lucky = 0, -- suggested price: 499 R$
 	MasterThief = 0, -- suggested price: 449 R$
+	SpeedyBoots = 0, -- suggested price: 299 R$
 }
 
 Config.GamePassInfo = {
@@ -141,6 +159,7 @@ Config.GamePassInfo = {
 	AutoCharge = { title = "Auto Charge", desc = "Your crystals charge themselves while you play." },
 	Lucky = { title = "Lucky (VIP)", desc = "2x mutation odds + the exclusive Rainbow Shard." },
 	MasterThief = { title = "Master Thief", desc = "Bank +25% more from heists and carry loot faster." },
+	SpeedyBoots = { title = "Speedy Boots", desc = "+40% run speed forever. Escape with the loot — or chase thieves down." },
 }
 
 Config.DevProducts = {
@@ -149,6 +168,7 @@ Config.DevProducts = {
 	{ key = "LargeCoins", id = 0, type = "coins", amount = 300_000, label = "300K Coins" }, -- suggested: 799 R$
 	{ key = "InstantGrow", id = 0, type = "instantGrow", amount = 0, label = "⚡ Instant Grow (finish ALL your crystals)" }, -- suggested: 99 R$
 	{ key = "Shield30", id = 0, type = "shield", amount = 1_800, label = "🛡️ Plot Shield (30 minutes)" }, -- suggested: 79 R$
+	{ key = "SuperLuckPotion", id = 0, type = "superLuck", amount = 0, label = "🧪 Super Luck Potion (10x luck, next 10 plants)" }, -- suggested: 149 R$
 }
 
 return Config

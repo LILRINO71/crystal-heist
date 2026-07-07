@@ -75,7 +75,8 @@ local function cleanupCarry(thief: Player)
 	local character = thief.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
-		humanoid.WalkSpeed = Config.Heist.BaseWalkSpeed
+		humanoid.WalkSpeed = Monetization.ownsPass(thief, "SpeedyBoots") and Config.Heist.SpeedyBootsWalkSpeed
+			or Config.Heist.BaseWalkSpeed
 	end
 end
 
@@ -213,8 +214,8 @@ function Heist.tryStartSteal(thief: Player, plotIndex: number, slot: number)
 	clicker.MaxActivationDistance = Config.Heist.ZapRange
 	clicker.Parent = character
 
-	humanoid.WalkSpeed = Monetization.ownsPass(thief, "MasterThief") and Config.Heist.CarryWalkSpeedMasterThief
-		or Config.Heist.CarryWalkSpeed
+	humanoid.WalkSpeed = (Monetization.ownsPass(thief, "MasterThief") and Config.Heist.CarryWalkSpeedMasterThief or Config.Heist.CarryWalkSpeed)
+		+ (Monetization.ownsPass(thief, "SpeedyBoots") and Config.Heist.CarrySpeedBootsBonus or 0)
 	thief:SetAttribute("CarryingFromUserId", victim.UserId)
 
 	local connections = {}

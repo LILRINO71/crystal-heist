@@ -10,8 +10,10 @@
 2. **CHARGE** ⚡ — Click growing crystals to shave seconds off. Idle players wait; active players print money.
 3. **HARVEST** ✨ — Ready crystals glow and sparkle. Click (or HARVEST ALL) to cash in.
 4. **STEAL** 🏴 — Ready crystals on *other players'* plots are fair game: click one and it floats over your head — you're slowed, highlighted red for the whole server, and must sprint to the hub's **Black Market** to bank ~50% of its value.
-5. **DEFEND** 🛡️ — Victims get an alarm and can chase + click the thief to **zap** the crystal home. **Guard Turrets** (3 tiers) auto-zap thieves still on your plot. Pity shields after being robbed; join shields on spawn.
+5. **DEFEND** 🛡️ — Victims get an alarm and can chase + click the thief to **zap** the crystal home. **Guard Turrets** (3 tiers) auto-zap thieves still on your plot; **coin Shields** (5 min, stack to 10) buy total immunity. Pity shields after being robbed; join shields on spawn.
 6. **VOID SURGE** 🌌 — Random server-wide events: 3x mutation luck, 75% steal payouts, purple sky. Chaos by design.
+
+Plus: 🧪 **Luck Potions** (coins or Robux) juice mutation odds for your next plants, a 🧬 **mutation collection** tab tracks every mutation you've grown, and a 🏠 **My Plot** button teleports you home (blocked while carrying stolen loot, obviously).
 
 The tension is the design: only READY crystals are stealable, so AFK farming is risky, harvesting fast matters, and every sparkle on someone else's plot is a temptation.
 
@@ -60,8 +62,8 @@ src/
 
 1. Publish the game (File → Publish to Roblox)
 2. Creator Dashboard → your experience → **Monetization**:
-   - **Passes**: 2x Coins (199 R$), Auto Charge (349 R$), Lucky (499 R$), Master Thief (449 R$)
-   - **Developer Products**: 5K Coins (49 R$), 40K Coins (199 R$), 300K Coins (799 R$), Instant Grow (99 R$), Plot Shield 30min (79 R$)
+   - **Passes**: 2x Coins (199 R$), Auto Charge (349 R$), Lucky (499 R$), Master Thief (449 R$), Speedy Boots (299 R$)
+   - **Developer Products**: 5K Coins (49 R$), 40K Coins (199 R$), 300K Coins (799 R$), Instant Grow (99 R$), Plot Shield 30min (79 R$), Super Luck Potion (149 R$)
 3. Paste the IDs into `Config.GamePasses` / `Config.DevProducts` in [Config.luau](src/shared/Config.luau)
 4. Game Settings → Security → enable **Studio Access to API Services**
 

@@ -35,6 +35,9 @@ local function defaultProfile()
 		unlockedSlots = Config.Plot.StartSlots,
 		turretTier = 0,
 		shieldUntil = 0,
+		luckPlants = 0, -- plants remaining on the active luck potion
+		luckMult = 1, -- the active potion's mutation-odds multiplier
+		mutationCounts = {}, -- [mutationKey] = times grown (the collection)
 		tutorialSeen = false,
 		crystals = {},
 	}
@@ -57,6 +60,12 @@ function Data.sync(player: Player)
 	player:SetAttribute("TutorialSeen", profile.tutorialSeen)
 	player:SetAttribute("UnlockedSlots", profile.unlockedSlots)
 	player:SetAttribute("TurretTier", profile.turretTier)
+	player:SetAttribute("ShieldUntil", profile.shieldUntil)
+	player:SetAttribute("LuckPlants", profile.luckPlants)
+	player:SetAttribute("LuckMult", profile.luckMult)
+	for _, mutation in Config.Mutations do
+		player:SetAttribute("Mut" .. mutation.key, profile.mutationCounts[mutation.key] or 0)
+	end
 end
 
 local function loadProfile(player: Player)

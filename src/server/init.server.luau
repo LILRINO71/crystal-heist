@@ -6,7 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local remotes = Instance.new("Folder")
 remotes.Name = "Remotes"
-for _, name in { "Plant", "HarvestAll", "BuyTurret", "TutorialDone", "Notify", "Announce", "HarvestFx" } do
+for _, name in { "Plant", "HarvestAll", "BuyTurret", "BuyShield", "BuyPotion", "TeleportHome", "TutorialDone", "Notify", "Announce", "HarvestFx" } do
 	local remote = Instance.new("RemoteEvent")
 	remote.Name = name
 	remote.Parent = remotes

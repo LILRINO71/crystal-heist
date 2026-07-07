@@ -39,6 +39,7 @@ local function billboard(adornee: BasePart, text: string, color: Color3, offsetY
 	gui.Size = size
 	gui.StudsOffsetWorldSpace = Vector3.new(0, offsetY, 0)
 	gui.MaxDistance = 300
+	gui.AlwaysOnTop = true -- text never clips into geometry
 
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)

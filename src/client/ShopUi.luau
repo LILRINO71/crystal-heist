@@ -167,10 +167,37 @@ local function buildDefenseTab(parent: Frame)
 	player:GetAttributeChangedSignal("TurretTier"):Connect(refreshTurret)
 	refreshTurret()
 
+	-- Coin Shield: protect your crystals with money.
+	local coinShieldRow = row(list, 2, 76)
+	titleLabel(coinShieldRow, "🛡️ Coin Shield", Color3.fromRGB(120, 220, 255), UDim2.fromOffset(12, 8), UDim2.new(1, -140, 0, 26), 20)
+	local coinShieldDesc = subLabel(coinShieldRow, "", UDim2.fromOffset(12, 38), UDim2.new(1, -140, 0, 32), 13)
+	coinShieldDesc.TextWrapped = true
+	UI.button({
+		Text = "BUY",
+		Size = UDim2.fromOffset(104, 44),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -10, 0.5, 0),
+		Parent = coinShieldRow,
+	}).Activated:Connect(function()
+		ReplicatedStorage.Remotes.BuyShield:FireServer()
+	end)
+
+	local shieldInfo = `{Config.Shield.Duration / 60} min of steal immunity for {Formulas.abbreviate(Config.Shield.CoinCost)} 🪙 (stacks to {Config.Shield.MaxRemaining / 60} min).`
+	local function refreshShield()
+		local remaining = math.max(0, (player:GetAttribute("ShieldUntil") or 0) - os.time())
+		coinShieldDesc.Text = remaining > 0 and `🟢 ACTIVE: {math.floor(remaining)}s left. {shieldInfo}` or shieldInfo
+	end
+	task.spawn(function()
+		while true do
+			refreshShield()
+			task.wait(1)
+		end
+	end)
+
 	-- Plot Shield product (only shown once its ID is configured).
 	for _, product in Config.DevProducts do
 		if product.type == "shield" and product.id ~= 0 then
-			local shieldRow = row(list, 2, 64)
+			local shieldRow = row(list, 3, 64)
 			titleLabel(shieldRow, "🛡️ " .. product.label, UI.Palette.text, UDim2.fromOffset(12, 8), UDim2.new(1, -140, 0, 26), 18)
 			subLabel(shieldRow, "Robux. Total steal immunity while it lasts.", UDim2.fromOffset(12, 36), UDim2.new(1, -140, 0, 20), 13)
 			UI.button({
@@ -187,6 +214,68 @@ local function buildDefenseTab(parent: Frame)
 	end
 end
 
+-- ============================== MUTATIONS TAB ==============================
+
+local function buildMutationsTab(parent: Frame)
+	local list = scrollList(parent)
+
+	-- Luck Potion: buy better mutation odds with coins.
+	local potion = Config.Potions.Luck
+	local potionRow = row(list, 1, 76)
+	titleLabel(potionRow, "🧪 Luck Potion", UI.Palette.primary, UDim2.fromOffset(12, 8), UDim2.new(1, -140, 0, 26), 20)
+	local potionDesc = subLabel(potionRow, "", UDim2.fromOffset(12, 38), UDim2.new(1, -140, 0, 32), 13)
+	potionDesc.TextWrapped = true
+	UI.button({
+		Text = "BUY",
+		Size = UDim2.fromOffset(104, 44),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -10, 0.5, 0),
+		Parent = potionRow,
+	}).Activated:Connect(function()
+		ReplicatedStorage.Remotes.BuyPotion:FireServer()
+	end)
+
+	local potionInfo = `{potion.multiplier}x mutation odds for your next {potion.plants} plants — {Formulas.abbreviate(potion.cost)} 🪙 (stacks to {potion.maxPlants}).`
+	local function refreshPotion()
+		local plants = player:GetAttribute("LuckPlants") or 0
+		local mult = player:GetAttribute("LuckMult") or 1
+		potionDesc.Text = plants > 0 and `🟢 ACTIVE: {mult}x luck, {plants} plants left. {potionInfo}` or potionInfo
+	end
+	player:GetAttributeChangedSignal("LuckPlants"):Connect(refreshPotion)
+	refreshPotion()
+
+	-- The collection: every mutation and how many you've grown.
+	for i, mutation in Config.Mutations do
+		local container = row(list, 1 + i, 60)
+		UI.create("Frame", {
+			Position = UDim2.fromOffset(10, 10),
+			Size = UDim2.fromOffset(40, 40),
+			BackgroundColor3 = mutation.color,
+			Parent = container,
+		}, { UI.corner(8) })
+		titleLabel(container, `{mutation.key} — x{mutation.multiplier}`, mutation.color, UDim2.fromOffset(60, 6), UDim2.new(1, -190, 0, 26), 18)
+		subLabel(container, `1 in {Formulas.abbreviate(math.floor(1 / mutation.chance + 0.5))} base odds`, UDim2.fromOffset(60, 34), UDim2.new(1, -190, 0, 20), 13)
+
+		local countLabel = UI.create("TextLabel", {
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -12, 0.5, 0),
+			Size = UDim2.fromOffset(110, 32),
+			BackgroundTransparency = 1,
+			Text = "",
+			TextColor3 = UI.Palette.text,
+			Font = Enum.Font.FredokaOne,
+			TextScaled = true,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			Parent = container,
+		}, { UI.create("UITextSizeConstraint", { MaxTextSize = 17 }) })
+		local function refreshCount()
+			countLabel.Text = `grown: {player:GetAttribute("Mut" .. mutation.key) or 0}`
+		end
+		player:GetAttributeChangedSignal("Mut" .. mutation.key):Connect(refreshCount)
+		refreshCount()
+	end
+end
+
 -- ============================== ROBUX TAB ==============================
 
 local function buildRobuxTab(parent: Frame)
@@ -194,7 +283,7 @@ local function buildRobuxTab(parent: Frame)
 	local order = 0
 	local anyVisible = false
 
-	local passOrder = { "DoubleCoins", "AutoCharge", "Lucky", "MasterThief" }
+	local passOrder = { "DoubleCoins", "AutoCharge", "Lucky", "MasterThief", "SpeedyBoots" }
 	for _, key in passOrder do
 		local passId = Config.GamePasses[key]
 		if passId == 0 then
@@ -266,7 +355,7 @@ end
 -- ============================== WINDOW ==============================
 
 function ShopUi.build()
-	local content = UI.window("Shop", "🛒 Shop", UDim2.fromOffset(500, 460))
+	local content = UI.window("Shop", "🛒 Shop", UDim2.fromOffset(530, 470))
 
 	local tabBar = UI.create("Frame", {
 		Size = UDim2.new(1, 0, 0, 40),
@@ -291,6 +380,7 @@ function ShopUi.build()
 	local tabs = {
 		{ key = "Shards", label = "💎 Shards", build = buildShardsTab },
 		{ key = "Defense", label = "🛡️ Defense", build = buildDefenseTab },
+		{ key = "Mutations", label = "🧬 Mutations", build = buildMutationsTab },
 		{ key = "Robux", label = "👑 Robux", build = buildRobuxTab },
 	}
 
@@ -315,7 +405,7 @@ function ShopUi.build()
 
 		local button = UI.button({
 			Text = tab.label,
-			Size = UDim2.fromOffset(140, 40),
+			Size = UDim2.fromOffset(118, 40),
 			LayoutOrder = i,
 			Color = i == 1 and UI.Palette.accent or UI.Palette.panelLight,
 			TextColor = i == 1 and Color3.fromRGB(28, 24, 40) or UI.Palette.text,

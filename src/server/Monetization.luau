@@ -17,6 +17,20 @@ local handledReceipts = {} -- [PurchaseId] = true, session-level dedupe
 local productHandlers = {} -- [productType] = (player, product) -> ()
 local Data
 
+-- Speedy Boots: applied on every spawn and the moment the pass is bought.
+-- Never touches a thief mid-carry (Heist owns the WalkSpeed while carrying).
+local function applyWalkSpeed(player: Player)
+	if player:GetAttribute("CarryingFromUserId") ~= nil then
+		return
+	end
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.WalkSpeed = Monetization.ownsPass(player, "SpeedyBoots") and Config.Heist.SpeedyBootsWalkSpeed
+			or Config.Heist.BaseWalkSpeed
+	end
+end
+
 local function refreshPasses(player: Player)
 	local owned = {}
 	for key, passId in Config.GamePasses do
@@ -31,6 +45,7 @@ local function refreshPasses(player: Player)
 		player:SetAttribute("Owns" .. key, owns)
 	end
 	ownership[player] = owned
+	applyWalkSpeed(player)
 end
 
 local function processReceipt(receiptInfo)
@@ -82,11 +97,15 @@ end
 function Monetization.start(dataService)
 	Data = dataService
 
-	Players.PlayerAdded:Connect(function(player)
+	local function onPlayerAdded(player: Player)
+		player.CharacterAdded:Connect(function()
+			task.defer(applyWalkSpeed, player)
+		end)
 		task.spawn(refreshPasses, player)
-	end)
+	end
+	Players.PlayerAdded:Connect(onPlayerAdded)
 	for _, player in Players:GetPlayers() do
-		task.spawn(refreshPasses, player)
+		onPlayerAdded(player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
 		ownership[player] = nil
@@ -104,6 +123,7 @@ function Monetization.start(dataService)
 					owned[key] = true
 				end
 				player:SetAttribute("Owns" .. key, true)
+				applyWalkSpeed(player)
 				local notify = ReplicatedStorage.Remotes:FindFirstChild("Notify")
 				if notify then
 					notify:FireClient(player, "success", `{Config.GamePassInfo[key].title} unlocked!`)

@@ -91,7 +91,7 @@ function Hud.start()
 	local menu = UI.create("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 12, 0.5, 0),
-		Size = UDim2.fromOffset(130, 160),
+		Size = UDim2.fromOffset(130, 220),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, {
@@ -114,9 +114,20 @@ function Hud.start()
 	end)
 
 	UI.button({
-		Text = "❓ How to Play",
+		Text = "🏠 My Plot",
 		Size = UDim2.fromOffset(130, 46),
 		LayoutOrder = 2,
+		Color = UI.Palette.panelLight,
+		TextColor = UI.Palette.text,
+		Parent = menu,
+	}).Activated:Connect(function()
+		remotes:WaitForChild("TeleportHome"):FireServer()
+	end)
+
+	UI.button({
+		Text = "❓ How to Play",
+		Size = UDim2.fromOffset(130, 46),
+		LayoutOrder = 3,
 		Color = UI.Palette.panelLight,
 		TextColor = UI.Palette.text,
 		Parent = menu,
